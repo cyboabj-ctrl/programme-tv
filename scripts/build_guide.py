@@ -38,7 +38,9 @@ DEFAULT_SOURCES = [
 ]
 
 DAYS_AHEAD = 8          # aujourd'hui + 7 jours
-DESC_MAX = 700          # longueur max d'un résumé (caractères)
+DESC_MAX = 500          # longueur max d'un résumé (caractères)
+# Chaînes retenues : identifiants XMLTV se terminant par ce suffixe (chaînes françaises).
+KEEP_SUFFIX = os.environ.get("KEEP_SUFFIX", ".fr")
 
 # Chaînes de la TNT gratuite, dans l'ordre d'affichage.
 # Chaque entrée : liste de variantes de nom (normalisées, voir norm()).
@@ -192,7 +194,7 @@ def build(xml_bytes, out_dir, source):
         elif el.tag == "programme":
             cid = el.get("channel")
             s, e = parse_time(el.get("start")), parse_time(el.get("stop"))
-            if cid and s:
+            if cid and s and (not KEEP_SUFFIX or cid.endswith(KEEP_SUFFIX)):
                 e = e or s + 1800
                 title = text(el, "title") or "Programme"
                 desc = text(el, "desc") or ""
@@ -234,17 +236,23 @@ def build(xml_bytes, out_dir, source):
 
     os.makedirs(os.path.join(out_dir, "days"), exist_ok=True)
     for name in os.listdir(os.path.join(out_dir, "days")):
-        if name.endswith(".json") and name[:-5] not in day_list:
+        if name.endswith(".json") and name.split(".")[0] not in day_list:
             os.remove(os.path.join(out_dir, "days", name))
 
     available = []
     for d, progs in days.items():
         if not progs:
             continue
-        for lst in progs.values():
+        light, details = {}, {}
+        for cid, lst in progs.items():
             lst.sort(key=lambda p: p[0])
+            # Fichier principal : sans résumé ni image (chargés à la demande)
+            light[cid] = [[p[0], p[1], p[2], p[3], p[4], "", "", p[7], p[8]] for p in lst]
+            details[cid] = [[p[5], p[6]] for p in lst]
         with open(os.path.join(out_dir, "days", f"{d}.json"), "w", encoding="utf-8") as f:
-            json.dump({"date": d, "progs": progs}, f, ensure_ascii=False, separators=(",", ":"))
+            json.dump({"date": d, "progs": light}, f, ensure_ascii=False, separators=(",", ":"))
+        with open(os.path.join(out_dir, "days", f"{d}.details.json"), "w", encoding="utf-8") as f:
+            json.dump({"date": d, "details": details}, f, ensure_ascii=False, separators=(",", ":"))
         available.append(d)
 
     with open(os.path.join(out_dir, "channels.json"), "w", encoding="utf-8") as f:

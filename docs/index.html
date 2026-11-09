@@ -274,6 +274,26 @@ async function loadDay(iso){
   if(!state.dayCache[iso]) state.dayCache[iso] = getJSON("days/" + iso + ".json").then(d => d.progs).catch(e => { delete state.dayCache[iso]; throw e; });
   return state.dayCache[iso];
 }
+const detailCache = {};
+async function loadDetails(iso){
+  if(!detailCache[iso]) detailCache[iso] = getJSON("days/" + iso + ".details.json").then(d => d.details).catch(e => { delete detailCache[iso]; throw e; });
+  return detailCache[iso];
+}
+// Résumé et image d'un programme : [desc, img] ou null
+async function details(p, c){
+  const iso = new Date(p[P.S] * 1000).toISOString().slice(0, 10);
+  const tries = [iso, new Date((p[P.S] - 86400) * 1000).toISOString().slice(0, 10)];
+  for(const d of tries){
+    if(!state.meta.days.includes(d)) continue;
+    try{
+      const [progs, det] = await Promise.all([loadDay(d), loadDetails(d)]);
+      const list = progs[c.id] || [];
+      const i = list.findIndex(q => q[P.S] === p[P.S] && q[P.T] === p[P.T]);
+      if(i >= 0 && det[c.id] && det[c.id][i]) return det[c.id][i];
+    }catch(e){}
+  }
+  return null;
+}
 function visibleChannels(){
   let list = state.channels;
   if(state.filter === "tnt") list = list.filter(c => c.tnt !== null);
@@ -452,10 +472,7 @@ async function renderJour(view){
 function openSheet(p, c){
   const sh = $("#sheet"); sh.textContent = "";
   sh.append(el("div", "grab"));
-  if(p[P.IMG]){
-    const img = new Image(); img.className = "img"; img.alt = ""; img.referrerPolicy = "no-referrer";
-    img.onerror = () => img.remove(); img.src = p[P.IMG]; sh.append(img);
-  }
+  const imgSlot = el("div"); sh.append(imgSlot);
   const cl = el("div", "chanline"); cl.append(logo(c), el("strong", null, c.name)); sh.append(cl);
   const h = el("h3", null, p[P.T]); h.id = "sheet-title"; sh.append(h);
   const sub = [p[P.EP], p[P.SUB]].filter(Boolean).join(" · ");
@@ -466,7 +483,15 @@ function openSheet(p, c){
   if(p[P.CAT]){ const f = el("span", "fact"); f.append(genreTag(p[P.CAT])); facts.append(f); }
   if(p[P.RAT]) facts.append(el("span", "fact", "Signalétique " + p[P.RAT]));
   sh.append(facts);
-  sh.append(el("p", null, p[P.DESC] || "Pas de résumé disponible pour ce programme."));
+  const para = el("p", null, "Chargement du résumé…"); sh.append(para);
+  details(p, c).then(d => {
+    if(!sh.contains(para)) return;
+    para.textContent = (d && d[0]) || "Pas de résumé disponible pour ce programme.";
+    if(d && d[1]){
+      const img = new Image(); img.className = "img"; img.alt = ""; img.referrerPolicy = "no-referrer";
+      img.onerror = () => img.remove(); img.src = d[1]; imgSlot.append(img);
+    }
+  });
   const also = el("div", "also"); sh.append(also);
   findOther(p, c).then(items => {
     if(!items.length) return;

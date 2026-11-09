@@ -1,0 +1,39 @@
+name: Mise à jour du guide TV
+
+on:
+  schedule:
+    - cron: "17 4 * * *"    # chaque jour à 4h17 (heure d'Abidjan)
+    - cron: "17 15 * * *"   # et à 15h17, pour rattraper les changements
+  workflow_dispatch:         # bouton « Run workflow » pour lancer à la main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: guide
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Préparer le guide
+        run: python scripts/build_guide.py
+
+      - name: Enregistrer les nouvelles données
+        run: |
+          git config user.name "guide-tv-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A docs/data
+          if git diff --cached --quiet; then
+            echo "Aucun changement."
+          else
+            git commit -m "Guide TV du $(date -u +%Y-%m-%d)"
+            git push
+          fi

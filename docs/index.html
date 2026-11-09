@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Programme TV</title>
+<meta name="description" content="Le programme des chaînes françaises, ce soir et sur 7 jours.">
+<meta name="theme-color" content="#F3F4F8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1120" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Programme TV">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Mise en page : une colonne type télécommande — en-tête collant (jours + vues), liste des chaînes, fiche en tiroir. */
+:root{
+  --bg:#F3F4F8; --surface:#FFFFFF; --sunk:#E8EAF2; --ink:#161A2B; --muted:#5D6378; --line:#DCDFEA;
+  --accent:#3046D9; --accent-ink:#FFFFFF; --accent-soft:#E3E7FF; --live:#D93A43;
+  --g-film:#C2410C; --g-serie:#7C3AED; --g-sport:#0E9F6E; --g-info:#2563EB; --g-doc:#A16207; --g-jeu:#DB2777; --g-jeune:#0891B2; --g-other:#8A90A6;
+  --f-display:"Bricolage Grotesque", "Avenir Next Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", Roboto, system-ui, sans-serif;
+  --r:14px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1120; --surface:#171B2E; --sunk:#20253C; --ink:#E9EBF5; --muted:#9AA0B8; --line:#2A2F47;
+    --accent:#8C9BFF; --accent-ink:#0E1120; --accent-soft:#252C55; --live:#FF6B72;
+    --g-film:#FB923C; --g-serie:#A78BFA; --g-sport:#34D399; --g-info:#60A5FA; --g-doc:#FACC15; --g-jeu:#F472B6; --g-jeune:#22D3EE; --g-other:#7D839C;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1120; --surface:#171B2E; --sunk:#20253C; --ink:#E9EBF5; --muted:#9AA0B8; --line:#2A2F47;
+  --accent:#8C9BFF; --accent-ink:#0E1120; --accent-soft:#252C55; --live:#FF6B72;
+  --g-film:#FB923C; --g-serie:#A78BFA; --g-sport:#34D399; --g-info:#60A5FA; --g-doc:#FACC15; --g-jeu:#F472B6; --g-jeune:#22D3EE; --g-other:#7D839C;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 var(--f-body);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+img{max-width:100%}
+[hidden]{display:none!important}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* En-tête */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:12px;padding-block:12px 6px}
+.brand{font-family:var(--f-display);font-weight:800;font-size:1.45rem;letter-spacing:-.02em;line-height:1;display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.brand svg{flex:none}
+.icon-btn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line)}
+.icon-btn svg{width:20px;height:20px}
+.days{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-block:6px;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:16px}
+.days::-webkit-scrollbar{display:none}
+.day{flex:none;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:.92rem;white-space:nowrap}
+.day[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.bar{display:flex;gap:8px;align-items:center;padding-block:6px 10px;flex-wrap:wrap}
+.seg{display:flex;background:var(--sunk);border-radius:12px;padding:3px;gap:2px}
+.seg button{padding:7px 12px;border-radius:9px;font-weight:600;font-size:.92rem;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .12)}
+.seg.small button{padding:6px 10px;font-size:.85rem}
+.spacer{flex:1}
+
+/* Liste des chaînes */
+main{padding-block:12px 40px}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+.logo{width:56px;height:40px;border-radius:9px;background:#fff;display:grid;place-items:center;overflow:hidden;border:1px solid var(--line);flex:none}
+.logo>*{grid-area:1/1}
+.logo img{max-width:48px;max-height:32px;object-fit:contain}
+.logo .ini{font-family:var(--f-display);font-weight:800;font-size:.8rem;color:#1b1f33;text-align:center;line-height:1;padding:2px}
+.chan-btn{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.chan-name{font-size:.72rem;color:var(--muted);text-align:center;line-height:1.1;max-width:60px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.progs{display:flex;flex-direction:column;gap:8px;min-width:0}
+.prog{display:block;text-align:left;width:100%;min-width:0}
+.prog .meta{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums;flex-wrap:wrap}
+.prog .time{font-family:var(--f-display);font-weight:700;color:var(--ink);font-size:.95rem}
+.prog .t{font-weight:700;font-size:1.04rem;line-height:1.25;overflow-wrap:anywhere}
+.prog .sub{font-size:.88rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prog.second .t{font-size:.94rem;font-weight:600}
+.prog.second{padding-top:8px;border-top:1px dashed var(--line)}
+.label{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--muted)}
+.genre{display:inline-flex;align-items:center;gap:5px}
+.genre i{width:8px;height:8px;border-radius:50%;background:var(--g-other);display:inline-block}
+.star{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;color:var(--muted)}
+.star svg{width:20px;height:20px}
+.star[aria-pressed="true"]{color:#E3A008}
+.star[aria-pressed="true"] svg{fill:currentColor}
+.progress{height:4px;background:var(--sunk);border-radius:4px;overflow:hidden;margin-top:6px}
+.progress span{display:block;height:100%;background:var(--accent);border-radius:4px}
+.live{color:var(--live);font-weight:700;display:inline-flex;align-items:center;gap:5px}
+.live::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.empty{color:var(--muted);text-align:center;padding:40px 16px;background:var(--surface);border:1px dashed var(--line);border-radius:var(--r)}
+
+/* Vue journée d'une chaîne */
+.chanbar{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-block:4px 12px}
+.chanbar::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;border-radius:12px;border:2px solid transparent}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.chip .logo{width:52px;height:36px}
+.daylist{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.dayhead{display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid var(--line)}
+.dayhead h2{font-family:var(--f-display);font-size:1.25rem;margin:0;flex:1;min-width:0;text-wrap:balance}
+.slot{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;width:100%;text-align:left;padding:11px 12px;border-bottom:1px solid var(--line)}
+.slot:last-child{border-bottom:0}
+.slot .time{font-family:var(--f-display);font-weight:700;font-variant-numeric:tabular-nums}
+.slot .dur{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.slot.past{opacity:.5}
+.slot.now{background:var(--accent-soft)}
+.slot.prime .time{color:var(--accent)}
+.part{padding:8px 12px;background:var(--sunk)}
+
+/* Fiche programme */
+.sheet-back{position:fixed;inset:0;background:rgb(8 10 20 / .5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:640px;max-height:88vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:8px max(18px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));box-shadow:0 -10px 40px rgb(0 0 0 / .25)}
+.grab{width:42px;height:5px;border-radius:5px;background:var(--line);margin:4px auto 12px}
+.sheet .img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;background:var(--sunk);margin-bottom:12px;max-width:100%}
+.sheet h3{font-family:var(--f-display);font-size:1.5rem;line-height:1.15;margin:4px 0 2px;text-wrap:balance}
+.sheet .subtitle{color:var(--muted);font-weight:600}
+.facts{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.fact{font-size:.82rem;padding:4px 9px;border-radius:999px;background:var(--sunk);font-variant-numeric:tabular-nums}
+.sheet p{margin:0;line-height:1.55;max-width:65ch}
+.sheet .chanline{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.sheet .close{margin-top:18px;width:100%;padding:12px;border-radius:12px;background:var(--sunk);font-weight:700}
+.sheet .also{margin-top:16px}
+.sheet .also ul{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-direction:column;gap:4px;font-size:.92rem;font-variant-numeric:tabular-nums}
+
+/* Recherche */
+.search{position:fixed;inset:0;background:var(--bg);z-index:35;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.search .head{display:flex;gap:8px;align-items:center;padding-block:12px}
+.search input{flex:1;min-width:0;font:inherit;font-size:1.05rem;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.results{overflow-y:auto;flex:1;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.results h4{margin:14px 0 6px;font-family:var(--f-display);font-size:1rem}
+.res{display:grid;grid-template-columns:48px 56px minmax(0,1fr);gap:10px;align-items:center;width:100%;text-align:left;padding:8px;border-radius:12px;background:var(--surface);border:1px solid var(--line);margin-bottom:6px}
+.res .logo{width:48px;height:34px}
+.res .time{font-family:var(--f-display);font-weight:700;font-variant-numeric:tabular-nums}
+.hint{color:var(--muted);font-size:.92rem;padding:8px 0}
+
+footer{color:var(--muted);font-size:.82rem;padding-block:8px 28px;text-align:center}
+.warn{background:#FFF4D6;color:#5A4300;border:1px solid #F0D58A;padding:10px 12px;border-radius:12px;margin-bottom:10px;font-size:.92rem}
+:root[data-theme="dark"] .warn{background:#3A3010;color:#F3DF9C;border-color:#5C4D1C}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .warn{background:#3A3010;color:#F3DF9C;border-color:#5C4D1C}}
+.skel{height:92px;border-radius:var(--r);background:linear-gradient(90deg,var(--surface),var(--sunk),var(--surface));background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion: reduce){.skel{animation:none}}
+@media (min-width:640px){.row{grid-template-columns:64px minmax(0,1fr) auto}.logo{width:64px;height:44px}.logo img{max-width:56px;max-height:36px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="7" width="28" height="19" rx="5" fill="var(--accent)"/><path d="M11 2l5 5 5-5" stroke="var(--accent)" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="6" y="11" width="13" height="2.6" rx="1.3" fill="var(--accent-ink)"/><rect x="6" y="16" width="9" height="2.6" rx="1.3" fill="var(--accent-ink)" opacity=".7"/><circle cx="24.5" cy="16.5" r="3" fill="var(--accent-ink)"/></svg>
+        <span>Programme TV</span>
+      </div>
+      <button class="icon-btn" id="btn-search" aria-label="Rechercher un programme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      </button>
+    </div>
+    <nav class="days" id="days" aria-label="Jour"></nav>
+    <div class="bar">
+      <div class="seg" role="group" aria-label="Vue" id="modes">
+        <button data-mode="soir" aria-pressed="true">Ce soir</button>
+        <button data-mode="now" aria-pressed="false">En ce moment</button>
+        <button data-mode="jour" aria-pressed="false">Par chaîne</button>
+      </div>
+      <span class="spacer"></span>
+      <div class="seg small" role="group" aria-label="Chaînes" id="filters">
+        <button data-filter="tnt" aria-pressed="true">TNT</button>
+        <button data-filter="fav" aria-pressed="false">Favoris</button>
+        <button data-filter="all" aria-pressed="false">Toutes</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="warn"></div>
+  <div id="view"><div class="list"><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div></div></div>
+</main>
+<footer class="wrap" id="foot"></footer>
+
+<div class="search" id="search" hidden>
+  <div class="wrap head">
+    <input id="q" type="search" placeholder="Film, série, émission…" autocomplete="off" enterkeyhint="search" aria-label="Rechercher un programme">
+    <button class="icon-btn" id="search-close" aria-label="Fermer la recherche">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="wrap results" id="results"><p class="hint">Tapez au moins 3 lettres. La recherche couvre les 7 prochains jours sur toutes les chaînes.</p></div>
+</div>
+
+<div class="sheet-back" id="sheet-back" hidden>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"></div>
+</div>
+
+<script>
+"use strict";
+const DATA = "data/";
+const PRIME = {h: 21, m: 10};           // début de la 1re partie de soirée, heure de Paris
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem("ptv:" + k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem("ptv:" + k, JSON.stringify(v)); }catch(e){} }
+};
+const state = {
+  meta: null, channels: [], byId: {}, dayCache: {},
+  day: null, mode: store.get("mode", "soir"), filter: store.get("filter", "tnt"),
+  favs: new Set(store.get("favs", [])), chan: store.get("chan", null)
+};
+const $ = s => document.querySelector(s);
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if(cls) e.className = cls; if(txt != null) e.textContent = txt; return e; };
+const P = {S:0,E:1,T:2,SUB:3,CAT:4,DESC:5,IMG:6,EP:7,RAT:8};
+
+/* ---------- Dates ---------- */
+const fmtTime = new Intl.DateTimeFormat("fr-FR", {hour:"2-digit", minute:"2-digit"});
+const fmtDayLong = new Intl.DateTimeFormat("fr-FR", {weekday:"long", day:"numeric", month:"long", timeZone:"UTC"});
+const fmtDayShort = new Intl.DateTimeFormat("fr-FR", {weekday:"short", day:"numeric", timeZone:"UTC"});
+const hm = s => fmtTime.format(new Date(s * 1000)).replace(":", "h");
+const nowS = () => Math.floor(Date.now() / 1000);
+function todayISO(){ return new Date().toISOString().slice(0, 10); }
+function dayLabel(iso){
+  const t = todayISO();
+  const tm = new Date(Date.parse(t) + 864e5).toISOString().slice(0,10);
+  if(iso === t) return "Aujourd'hui";
+  if(iso === tm) return "Demain";
+  const s = fmtDayShort.format(new Date(iso + "T00:00:00Z"));
+  return s.charAt(0).toUpperCase() + s.slice(1).replace(".", "");
+}
+// Instant UTC (secondes) correspondant à une heure murale dans un fuseau donné.
+function wallToUtc(iso, h, m, tz){
+  const guess = Date.parse(iso + "T00:00:00Z") + (h * 60 + m) * 60000;
+  const parts = new Intl.DateTimeFormat("en-GB", {timeZone: tz, hourCycle:"h23", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit"}).formatToParts(new Date(guess));
+  const g = Object.fromEntries(parts.map(p => [p.type, p.value]));
+  const asIf = Date.UTC(+g.year, +g.month - 1, +g.day, +g.hour, +g.minute);
+  return Math.round((guess - (asIf - guess)) / 1000);
+}
+function dur(s, e){ const m = Math.round((e - s) / 60); return m >= 60 ? `${Math.floor(m/60)} h ${String(m%60).padStart(2,"0")}` : `${m} min`; }
+
+/* ---------- Genres ---------- */
+function genre(cat){
+  const c = (cat || "").toLowerCase();
+  if(/film|téléfilm|telefilm|cinéma|cinema/.test(c)) return "film";
+  if(/série|serie|feuilleton|sitcom/.test(c)) return "serie";
+  if(/sport|foot|rugby|tennis|cyclisme|basket/.test(c)) return "sport";
+  if(/info|journal|actualit|météo|meteo|débat|magazine d'info|politique/.test(c)) return "info";
+  if(/document|découverte|decouverte|nature|histoire|science/.test(c)) return "doc";
+  if(/jeu/.test(c)) return "jeu";
+  if(/jeunesse|dessin|animation|enfant/.test(c)) return "jeune";
+  return "other";
+}
+function genreTag(cat){
+  const g = el("span", "genre");
+  const i = el("i"); i.style.background = `var(--g-${genre(cat)})`;
+  g.append(i, document.createTextNode(cat || ""));
+  return g;
+}
+
+/* ---------- Données ---------- */
+async function getJSON(path){
+  const v = state.meta ? state.meta.generated : Date.now();
+  const r = await fetch(DATA + path + "?v=" + v, {cache: state.meta ? "default" : "no-cache"});
+  if(!r.ok) throw new Error(r.status + " " + path);
+  return r.json();
+}
+async function loadDay(iso){
+  if(!state.dayCache[iso]) state.dayCache[iso] = getJSON("days/" + iso + ".json").then(d => d.progs).catch(e => { delete state.dayCache[iso]; throw e; });
+  return state.dayCache[iso];
+}
+function visibleChannels(){
+  let list = state.channels;
+  if(state.filter === "tnt") list = list.filter(c => c.tnt !== null);
+  else if(state.filter === "fav") list = list.filter(c => state.favs.has(c.id));
+  return list;
+}
+
+/* ---------- Éléments communs ---------- */
+function logo(c){
+  const box = el("div", "logo");
+  const words = c.name.replace(/[^A-Za-z0-9+À-ÿ ]/g, " ").trim().split(/\s+/).filter(Boolean);
+  const ini = el("span", "ini", (words.length === 1 ? words[0].slice(0, 5) : words.map(w => /^\d+$/.test(w) ? w : w[0]).join("").slice(0, 4)).toUpperCase() || "TV");
+  box.append(ini);
+  if(c.logo){
+    const img = new Image(); img.alt = ""; img.loading = "lazy"; img.decoding = "async"; img.referrerPolicy = "no-referrer";
+    img.hidden = true;
+    img.onload = () => { img.hidden = false; ini.remove(); };
+    img.onerror = () => img.remove();
+    img.src = c.logo; box.append(img);
+  }
+  return box;
+}
+function starBtn(c){
+  const b = el("button", "star");
+  const on = state.favs.has(c.id);
+  b.setAttribute("aria-pressed", on); b.setAttribute("aria-label", (on ? "Retirer " : "Ajouter ") + c.name + " des favoris");
+  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/></svg>';
+  b.onclick = e => {
+    e.stopPropagation();
+    state.favs.has(c.id) ? state.favs.delete(c.id) : state.favs.add(c.id);
+    store.set("favs", [...state.favs]);
+    const now = state.favs.has(c.id);
+    b.setAttribute("aria-pressed", now);
+    b.setAttribute("aria-label", (now ? "Retirer " : "Ajouter ") + c.name + " des favoris");
+    if(state.filter === "fav") render();
+  };
+  return b;
+}
+function chanButton(c){
+  const b = el("button", "chan-btn");
+  b.setAttribute("aria-label", "Toute la journée sur " + c.name);
+  b.append(logo(c), el("span", "chan-name", c.name));
+  b.onclick = () => { state.chan = c.id; store.set("chan", c.id); setMode("jour"); };
+  return b;
+}
+function progBlock(p, c, opts = {}){
+  const b = el("button", "prog" + (opts.second ? " second" : ""));
+  const meta = el("div", "meta");
+  if(opts.label) meta.append(el("span", "label", opts.label));
+  meta.append(el("span", "time", hm(p[P.S])));
+  meta.append(el("span", null, "– " + hm(p[P.E])));
+  if(opts.live) meta.append(el("span", "live", "En cours"));
+  b.append(meta, el("div", "t", p[P.T]));
+  const info = el("div", "sub");
+  if(p[P.CAT]) info.append(genreTag(p[P.CAT]), document.createTextNode(" · "));
+  info.append(document.createTextNode([dur(p[P.S], p[P.E])].concat(opts.second ? [] : [p[P.EP], p[P.SUB]]).filter(Boolean).join(" · ")));
+  b.append(info);
+  if(opts.progress != null){
+    const bar = el("div", "progress"); const s = el("span"); s.style.width = Math.max(2, Math.min(100, opts.progress * 100)) + "%";
+    bar.append(s); b.append(bar);
+  }
+  b.onclick = () => openSheet(p, c);
+  return b;
+}
+function emptyMsg(text){ const d = el("div", "empty", text); return d; }
+
+/* ---------- Vue : Ce soir ---------- */
+function eveningPicks(list, iso){
+  const t1 = wallToUtc(iso, PRIME.h, PRIME.m, "Europe/Paris");
+  let first = list.find(p => p[P.S] <= t1 && p[P.E] > t1 + 300 && (p[P.E] - p[P.S]) >= 1500);
+  if(!first) first = list.find(p => p[P.S] >= t1 - 600 && p[P.S] < t1 + 3600 && (p[P.E] - p[P.S]) >= 1500);
+  if(!first) first = list.find(p => p[P.E] > t1);
+  if(!first) return [];
+  const second = list.find(p => p[P.S] >= first[P.E] - 60 && (p[P.E] - p[P.S]) >= 1500 && p !== first);
+  return second ? [first, second] : [first];
+}
+async function renderSoir(view){
+  const progs = await loadDay(state.day);
+  const list = el("div", "list");
+  for(const c of visibleChannels()){
+    const ps = progs[c.id]; if(!ps) continue;
+    const picks = eveningPicks(ps, state.day);
+    if(!picks.length) continue;
+    const row = el("div", "row");
+    const box = el("div", "progs");
+    const n = nowS();
+    box.append(progBlock(picks[0], c, {label: "1re partie", live: picks[0][P.S] <= n && picks[0][P.E] > n}));
+    if(picks[1]) box.append(progBlock(picks[1], c, {label: "2e partie", second: true}));
+    row.append(chanButton(c), box, starBtn(c));
+    list.append(row);
+  }
+  view.append(list.childElementCount ? list : emptyMsg(state.filter === "fav" ? "Aucune chaîne en favori. Touchez l'étoile d'une chaîne pour l'ajouter." : "Pas de programme trouvé pour ce soir."));
+}
+
+/* ---------- Vue : En ce moment ---------- */
+async function renderNow(view){
+  const t = todayISO();
+  const progs = await loadDay(t);
+  let next = {};
+  const tm = new Date(Date.parse(t) + 864e5).toISOString().slice(0,10);
+  if(state.meta.days.includes(tm)) { try{ next = await loadDay(tm); }catch(e){} }
+  const n = nowS();
+  const list = el("div", "list");
+  for(const c of visibleChannels()){
+    const ps = (progs[c.id] || []).concat(next[c.id] || []);
+    const i = ps.findIndex(p => p[P.S] <= n && p[P.E] > n);
+    if(i < 0) continue;
+    const cur = ps[i];
+    const after = ps.slice(i + 1).find(p => p[P.S] >= cur[P.E] - 60);
+    const row = el("div", "row");
+    const box = el("div", "progs");
+    box.append(progBlock(cur, c, {live: true, progress: (n - cur[P.S]) / (cur[P.E] - cur[P.S])}));
+    if(after) box.append(progBlock(after, c, {label: "Ensuite", second: true}));
+    row.append(chanButton(c), box, starBtn(c));
+    list.append(row);
+  }
+  view.append(list.childElementCount ? list : emptyMsg(state.filter === "fav" ? "Aucune chaîne en favori. Touchez l'étoile d'une chaîne pour l'ajouter." : "Aucun programme en cours trouvé."));
+}
+
+/* ---------- Vue : Par chaîne ---------- */
+async function renderJour(view){
+  const progs = await loadDay(state.day);
+  let chans = visibleChannels().filter(c => progs[c.id]);
+  if(!chans.length) chans = state.channels.filter(c => progs[c.id]);
+  if(!chans.length){ view.append(emptyMsg("Pas de programme pour ce jour.")); return; }
+  const cur = chans.find(c => c.id === state.chan) || chans[0];
+  state.chan = cur.id;
+
+  const bar = el("div", "chanbar");
+  for(const c of chans){
+    const b = el("button", "chip");
+    b.setAttribute("aria-pressed", c.id === cur.id);
+    b.setAttribute("aria-label", c.name);
+    b.append(logo(c), el("span", "chan-name", c.name));
+    b.onclick = () => { state.chan = c.id; store.set("chan", c.id); render(); };
+    bar.append(b);
+  }
+  view.append(bar);
+
+  const box = el("section", "daylist");
+  const head = el("div", "dayhead");
+  head.append(logo(cur), el("h2", null, cur.name), starBtn(cur));
+  box.append(head);
+  const n = nowS();
+  const t1 = wallToUtc(state.day, PRIME.h, PRIME.m, "Europe/Paris");
+  const parts = [["Matin", 0], ["Après-midi", 12], ["Soirée", 19], ["Nuit", 24]];
+  let pi = -1;
+  const dayStart = Date.parse(state.day + "T00:00:00Z") / 1000;
+  let nowEl = null;
+  for(const p of progs[cur.id]){
+    const hLocal = (p[P.S] - dayStart) / 3600;
+    if(hLocal < 0 && pi === -1 && !box.querySelector(".part")) box.append(el("div", "part label", "Commencé la veille"));
+    while(pi + 1 < parts.length && hLocal >= parts[pi + 1][1]){ pi++; box.append(el("div", "part label", parts[pi][0])); }
+    const s = el("button", "slot");
+    if(p[P.E] <= n) s.classList.add("past");
+    if(p[P.S] <= n && p[P.E] > n){ s.classList.add("now"); nowEl = s; }
+    if(p[P.S] <= t1 && p[P.E] > t1) s.classList.add("prime");
+    const left = el("div"); left.append(el("div", "time", hm(p[P.S])), el("div", "dur", dur(p[P.S], p[P.E])));
+    const right = el("div", "prog");
+    right.append(el("div", "t", p[P.T]));
+    const info = el("div", "sub");
+    if(p[P.S] <= n && p[P.E] > n) info.append(el("span", "live", "En cours"), document.createTextNode(" "));
+    if(p[P.CAT]) info.append(genreTag(p[P.CAT]));
+    const sub = [p[P.EP], p[P.SUB]].filter(Boolean).join(" · ");
+    if(sub) info.append(document.createTextNode((p[P.CAT] ? " · " : "") + sub));
+    right.append(info);
+    s.append(left, right);
+    s.onclick = () => openSheet(p, cur);
+    box.append(s);
+  }
+  view.append(box);
+  if(nowEl && state.scrollNow){ state.scrollNow = false; requestAnimationFrame(() => { const h = document.querySelector("header").offsetHeight; window.scrollTo({top: Math.max(0, nowEl.getBoundingClientRect().top + window.scrollY - h - 80)}); }); }
+}
+
+/* ---------- Fiche programme ---------- */
+function openSheet(p, c){
+  const sh = $("#sheet"); sh.textContent = "";
+  sh.append(el("div", "grab"));
+  if(p[P.IMG]){
+    const img = new Image(); img.className = "img"; img.alt = ""; img.referrerPolicy = "no-referrer";
+    img.onerror = () => img.remove(); img.src = p[P.IMG]; sh.append(img);
+  }
+  const cl = el("div", "chanline"); cl.append(logo(c), el("strong", null, c.name)); sh.append(cl);
+  const h = el("h3", null, p[P.T]); h.id = "sheet-title"; sh.append(h);
+  const sub = [p[P.EP], p[P.SUB]].filter(Boolean).join(" · ");
+  if(sub) sh.append(el("div", "subtitle", sub));
+  const facts = el("div", "facts");
+  const d = new Date(p[P.S] * 1000).toISOString().slice(0, 10);
+  facts.append(el("span", "fact", dayLabel(d) + " · " + hm(p[P.S]) + " – " + hm(p[P.E])), el("span", "fact", dur(p[P.S], p[P.E])));
+  if(p[P.CAT]){ const f = el("span", "fact"); f.append(genreTag(p[P.CAT])); facts.append(f); }
+  if(p[P.RAT]) facts.append(el("span", "fact", "Signalétique " + p[P.RAT]));
+  sh.append(facts);
+  sh.append(el("p", null, p[P.DESC] || "Pas de résumé disponible pour ce programme."));
+  const also = el("div", "also"); sh.append(also);
+  findOther(p, c).then(items => {
+    if(!items.length) return;
+    also.append(el("div", "label", "Autres diffusions"));
+    const ul = el("ul");
+    for(const [q, qc] of items.slice(0, 6)){
+      const d2 = new Date(q[P.S] * 1000).toISOString().slice(0, 10);
+      ul.append(el("li", null, `${dayLabel(d2)} · ${hm(q[P.S])} · ${qc.name}` + (q[P.SUB] ? ` — ${q[P.SUB]}` : "")));
+    }
+    also.append(ul);
+  });
+  const close = el("button", "close", "Fermer"); close.onclick = closeSheet; sh.append(close);
+  $("#sheet-back").hidden = false;
+  close.focus({preventScroll: true});
+  sh.scrollTop = 0;
+}
+function closeSheet(){ $("#sheet-back").hidden = true; }
+$("#sheet-back").addEventListener("click", e => { if(e.target.id === "sheet-back") closeSheet(); });
+async function findOther(p, c){
+  const key = fold(p[P.T]); const out = [];
+  for(const iso of state.meta.days){
+    let progs; try{ progs = await loadDay(iso); }catch(e){ continue; }
+    for(const [cid, list] of Object.entries(progs)){
+      for(const q of list){
+        if(q[P.S] > p[P.S] && q[P.S] > nowS() && fold(q[P.T]) === key && !(cid === c.id && q[P.S] === p[P.S])){
+          if(!out.some(([o]) => o[P.S] === q[P.S] && o[P.T] === q[P.T])) out.push([q, state.byId[cid] || {name: cid}]);
+        }
+      }
+    }
+    if(out.length >= 6) break;
+  }
+  return out.sort((a, b) => a[0][P.S] - b[0][P.S]);
+}
+
+/* ---------- Recherche ---------- */
+const fold = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+let searchTimer;
+function openSearch(){ $("#search").hidden = false; $("#q").focus(); state.meta.days.forEach(d => loadDay(d).catch(() => {})); }
+function closeSearch(){ $("#search").hidden = true; }
+$("#btn-search").onclick = openSearch;
+$("#search-close").onclick = closeSearch;
+$("#q").addEventListener("input", () => { clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 220); });
+async function runSearch(){
+  const q = fold($("#q").value); const box = $("#results");
+  if(q.length < 3){ box.innerHTML = '<p class="hint">Tapez au moins 3 lettres. La recherche couvre les 7 prochains jours sur toutes les chaînes.</p>'; return; }
+  const words = q.split(/\s+/); const n = nowS(); const hits = [];
+  for(const iso of state.meta.days){
+    let progs; try{ progs = await loadDay(iso); }catch(e){ continue; }
+    for(const [cid, list] of Object.entries(progs)){
+      for(const p of list){
+        if(p[P.E] <= n) continue;
+        const hay = fold(p[P.T] + " " + p[P.SUB]);
+        if(words.every(w => hay.includes(w)) && !hits.some(h => h.cid === cid && h.p[P.S] === p[P.S])) hits.push({cid, p});
+      }
+    }
+  }
+  if(fold($("#q").value) !== q) return;
+  hits.sort((a, b) => a.p[P.S] - b.p[P.S]);
+  box.textContent = "";
+  if(!hits.length){ box.append(el("p", "hint", "Aucun programme trouvé pour « " + $("#q").value.trim() + " » dans les 7 prochains jours.")); return; }
+  let lastDay = "";
+  for(const {cid, p} of hits.slice(0, 150)){
+    const d = new Date(p[P.S] * 1000).toISOString().slice(0, 10);
+    if(d !== lastDay){ box.append(el("h4", null, dayLabel(d))); lastDay = d; }
+    const c = state.byId[cid] || {id: cid, name: cid, logo: null};
+    const b = el("button", "res");
+    const info = el("div", "prog");
+    info.append(el("div", "t", p[P.T]));
+    const sub = [c.name, p[P.EP], p[P.SUB]].filter(Boolean).join(" · ");
+    info.append(el("div", "sub", sub));
+    b.append(logo(c), el("span", "time", hm(p[P.S])), info);
+    b.onclick = () => openSheet(p, c);
+    box.append(b);
+  }
+  if(hits.length > 150) box.append(el("p", "hint", `${hits.length - 150} autres résultats. Précisez la recherche.`));
+}
+
+/* ---------- Navigation ---------- */
+function setMode(m){
+  state.mode = m; store.set("mode", m);
+  if(m === "now") state.day = todayISO();
+  if(m === "jour") state.scrollNow = true;
+  render();
+}
+document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+document.querySelectorAll("#filters button").forEach(b => b.onclick = () => { state.filter = b.dataset.filter; store.set("filter", state.filter); render(); });
+document.addEventListener("keydown", e => { if(e.key === "Escape"){ if(!$("#sheet-back").hidden) closeSheet(); else if(!$("#search").hidden) closeSearch(); } });
+
+function renderDays(){
+  const nav = $("#days"); nav.textContent = "";
+  for(const iso of state.meta.days){
+    const b = el("button", "day", dayLabel(iso));
+    b.setAttribute("aria-pressed", iso === state.day);
+    b.setAttribute("aria-label", fmtDayLong.format(new Date(iso + "T00:00:00Z")));
+    b.onclick = () => { state.day = iso; if(state.mode === "now") state.mode = "soir"; render(); };
+    nav.append(b);
+  }
+}
+let renderSeq = 0;
+async function render(){
+  const seq = ++renderSeq;
+  document.querySelectorAll("#modes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === state.mode));
+  document.querySelectorAll("#filters button").forEach(b => b.setAttribute("aria-pressed", b.dataset.filter === state.filter));
+  renderDays();
+  const view = el("div");
+  try{
+    if(state.mode === "now") await renderNow(view);
+    else if(state.mode === "jour") await renderJour(view);
+    else await renderSoir(view);
+  }catch(e){
+    console.error(e);
+    view.textContent = ""; view.append(emptyMsg("Les programmes de ce jour n'ont pas pu être chargés. Vérifiez la connexion, puis rechargez la page."));
+  }
+  if(seq !== renderSeq) return;
+  $("#view").replaceWith(Object.assign(view, {id: "view"}));
+}
+function renderFoot(){
+  const m = state.meta; const ageH = (nowS() - m.generated) / 3600;
+  const when = new Intl.DateTimeFormat("fr-FR", {weekday:"long", hour:"2-digit", minute:"2-digit"}).format(new Date(m.generated * 1000));
+  $("#foot").textContent = `${m.channels} chaînes · guide mis à jour ${when} · heures affichées à l'heure de votre téléphone`;
+  if(ageH > 36){
+    const w = el("div", "warn", `Le guide n'a pas été mis à jour depuis ${Math.round(ageH / 24)} jour(s). Les programmes peuvent avoir changé.`);
+    $("#warn").replaceChildren(w);
+  }
+}
+
+async function init(){
+  try{
+    state.meta = await getJSON("meta.json");
+    state.channels = await getJSON("channels.json");
+  }catch(e){
+    console.error(e);
+    $("#view").replaceChildren(emptyMsg("Le guide n'a pas pu être chargé. Vérifiez la connexion, puis rechargez la page."));
+    return;
+  }
+  state.byId = Object.fromEntries(state.channels.map(c => [c.id, c]));
+  const t = todayISO();
+  state.day = state.meta.days.includes(t) ? t : state.meta.days[0];
+  const H = {"#ce-soir": "soir", "#maintenant": "now", "#par-chaine": "jour"};
+  if(H[location.hash]) state.mode = H[location.hash];
+  if(state.mode === "now") state.day = todayISO();
+  if(state.mode === "jour") state.scrollNow = true;
+  renderFoot();
+  render();
+  // Rafraîchit « En ce moment » chaque minute
+  setInterval(() => { if(state.mode === "now" && $("#sheet-back").hidden && $("#search").hidden) render(); }, 60000);
+}
+init();
+</script>
+</body>
+</html>

@@ -247,8 +247,8 @@ function dur(s, e){ const m = Math.round((e - s) / 60); return m >= 60 ? `${Math
 /* ---------- Genres ---------- */
 function genre(cat){
   const c = (cat || "").toLowerCase();
-  if(/film|téléfilm|telefilm|cinéma|cinema/.test(c)) return "film";
-  if(/série|serie|feuilleton|sitcom/.test(c)) return "serie";
+  if(/série|serie|feuilleton|sitcom|saga/.test(c)) return "serie";
+  if(/film|téléfilm|telefilm|cinéma|cinema|comédie|comedie|drame|dramatique|thriller|policier|western|aventure|horreur|fantastique|science-fiction/.test(c)) return "film";
   if(/sport|foot|rugby|tennis|cyclisme|basket/.test(c)) return "sport";
   if(/info|journal|actualit|météo|meteo|débat|magazine d'info|politique/.test(c)) return "info";
   if(/document|découverte|decouverte|nature|histoire|science/.test(c)) return "doc";
